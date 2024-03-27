@@ -96,13 +96,13 @@ public partial class @PlayerMovement: IInputActionCollection2, IDisposable
             ]
         },
         {
-            ""name"": ""Punch"",
-            ""id"": ""5ff1bd1e-9e4d-4494-8be9-53a93bdff3f3"",
+            ""name"": ""Shoot"",
+            ""id"": ""62217a33-0730-47da-ae2a-71ffda334e66"",
             ""actions"": [
                 {
-                    ""name"": ""PunchInput"",
+                    ""name"": ""Shoot"",
                     ""type"": ""Button"",
-                    ""id"": ""918daf1a-7795-42b5-8559-153fbf118c70"",
+                    ""id"": ""3dd19c84-0cf8-4267-bee4-b6f312056ed6"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -112,12 +112,12 @@ public partial class @PlayerMovement: IInputActionCollection2, IDisposable
             ""bindings"": [
                 {
                     ""name"": """",
-                    ""id"": ""5aaf80d3-63ae-4001-9110-8613210d22c6"",
+                    ""id"": ""8dc313c6-dd3f-4db5-a694-47e023cdc351"",
                     ""path"": ""<Keyboard>/space"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""PunchInput"",
+                    ""action"": ""Shoot"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -129,9 +129,9 @@ public partial class @PlayerMovement: IInputActionCollection2, IDisposable
         // Movement
         m_Movement = asset.FindActionMap("Movement", throwIfNotFound: true);
         m_Movement_MovementInput = m_Movement.FindAction("MovementInput", throwIfNotFound: true);
-        // Punch
-        m_Punch = asset.FindActionMap("Punch", throwIfNotFound: true);
-        m_Punch_PunchInput = m_Punch.FindAction("PunchInput", throwIfNotFound: true);
+        // Shoot
+        m_Shoot = asset.FindActionMap("Shoot", throwIfNotFound: true);
+        m_Shoot_Shoot = m_Shoot.FindAction("Shoot", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -236,57 +236,57 @@ public partial class @PlayerMovement: IInputActionCollection2, IDisposable
     }
     public MovementActions @Movement => new MovementActions(this);
 
-    // Punch
-    private readonly InputActionMap m_Punch;
-    private List<IPunchActions> m_PunchActionsCallbackInterfaces = new List<IPunchActions>();
-    private readonly InputAction m_Punch_PunchInput;
-    public struct PunchActions
+    // Shoot
+    private readonly InputActionMap m_Shoot;
+    private List<IShootActions> m_ShootActionsCallbackInterfaces = new List<IShootActions>();
+    private readonly InputAction m_Shoot_Shoot;
+    public struct ShootActions
     {
         private @PlayerMovement m_Wrapper;
-        public PunchActions(@PlayerMovement wrapper) { m_Wrapper = wrapper; }
-        public InputAction @PunchInput => m_Wrapper.m_Punch_PunchInput;
-        public InputActionMap Get() { return m_Wrapper.m_Punch; }
+        public ShootActions(@PlayerMovement wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Shoot => m_Wrapper.m_Shoot_Shoot;
+        public InputActionMap Get() { return m_Wrapper.m_Shoot; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
         public bool enabled => Get().enabled;
-        public static implicit operator InputActionMap(PunchActions set) { return set.Get(); }
-        public void AddCallbacks(IPunchActions instance)
+        public static implicit operator InputActionMap(ShootActions set) { return set.Get(); }
+        public void AddCallbacks(IShootActions instance)
         {
-            if (instance == null || m_Wrapper.m_PunchActionsCallbackInterfaces.Contains(instance)) return;
-            m_Wrapper.m_PunchActionsCallbackInterfaces.Add(instance);
-            @PunchInput.started += instance.OnPunchInput;
-            @PunchInput.performed += instance.OnPunchInput;
-            @PunchInput.canceled += instance.OnPunchInput;
+            if (instance == null || m_Wrapper.m_ShootActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_ShootActionsCallbackInterfaces.Add(instance);
+            @Shoot.started += instance.OnShoot;
+            @Shoot.performed += instance.OnShoot;
+            @Shoot.canceled += instance.OnShoot;
         }
 
-        private void UnregisterCallbacks(IPunchActions instance)
+        private void UnregisterCallbacks(IShootActions instance)
         {
-            @PunchInput.started -= instance.OnPunchInput;
-            @PunchInput.performed -= instance.OnPunchInput;
-            @PunchInput.canceled -= instance.OnPunchInput;
+            @Shoot.started -= instance.OnShoot;
+            @Shoot.performed -= instance.OnShoot;
+            @Shoot.canceled -= instance.OnShoot;
         }
 
-        public void RemoveCallbacks(IPunchActions instance)
+        public void RemoveCallbacks(IShootActions instance)
         {
-            if (m_Wrapper.m_PunchActionsCallbackInterfaces.Remove(instance))
+            if (m_Wrapper.m_ShootActionsCallbackInterfaces.Remove(instance))
                 UnregisterCallbacks(instance);
         }
 
-        public void SetCallbacks(IPunchActions instance)
+        public void SetCallbacks(IShootActions instance)
         {
-            foreach (var item in m_Wrapper.m_PunchActionsCallbackInterfaces)
+            foreach (var item in m_Wrapper.m_ShootActionsCallbackInterfaces)
                 UnregisterCallbacks(item);
-            m_Wrapper.m_PunchActionsCallbackInterfaces.Clear();
+            m_Wrapper.m_ShootActionsCallbackInterfaces.Clear();
             AddCallbacks(instance);
         }
     }
-    public PunchActions @Punch => new PunchActions(this);
+    public ShootActions @Shoot => new ShootActions(this);
     public interface IMovementActions
     {
         void OnMovementInput(InputAction.CallbackContext context);
     }
-    public interface IPunchActions
+    public interface IShootActions
     {
-        void OnPunchInput(InputAction.CallbackContext context);
+        void OnShoot(InputAction.CallbackContext context);
     }
 }

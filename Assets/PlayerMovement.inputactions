@@ -74,13 +74,13 @@
             ]
         },
         {
-            "name": "Punch",
-            "id": "5ff1bd1e-9e4d-4494-8be9-53a93bdff3f3",
+            "name": "Shoot",
+            "id": "62217a33-0730-47da-ae2a-71ffda334e66",
             "actions": [
                 {
-                    "name": "PunchInput",
+                    "name": "Shoot",
                     "type": "Button",
-                    "id": "918daf1a-7795-42b5-8559-153fbf118c70",
+                    "id": "3dd19c84-0cf8-4267-bee4-b6f312056ed6",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -90,12 +90,12 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "5aaf80d3-63ae-4001-9110-8613210d22c6",
+                    "id": "8dc313c6-dd3f-4db5-a694-47e023cdc351",
                     "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "PunchInput",
+                    "action": "Shoot",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

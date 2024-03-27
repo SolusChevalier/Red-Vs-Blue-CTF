@@ -6,10 +6,6 @@ namespace CTF
 {
     public abstract class NodeAbs
     {
-        #region FIELDS
-        #endregion
-
-        #region METHODS
-        #endregion
+        public abstract bool Eval();
     }
 }
