@@ -1,0 +1,15 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+#ROOTNAMESPACEBEGIN#
+    // [AttributeUsage(AttributeTargets.Field)]
+    public class #SCRIPTNAME# : Attribute
+    {
+        #region FIELDS
+        #endregion
+
+        #region METHODS
+        #endregion
+    }
+#ROOTNAMESPACEEND#

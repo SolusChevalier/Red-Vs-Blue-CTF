@@ -1,0 +1,36 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+
+#ROOTNAMESPACEBEGIN#
+    // [CustomEditor(typeof(#SCRIPTNAME#))]
+    public class #SCRIPTNAME# : Editor
+    {
+        #region FIELDS
+
+        // private #SCRIPTNAME# _target;
+
+        #endregion
+
+        #region UNITY METHODS
+
+        private void OnEnable()
+        {
+        	// _target = target as #SCRIPTNAME#;
+        }
+
+        public override void OnInspectorGUI()
+        {
+            DrawDefaultInspector();
+        }
+
+        #endregion
+
+        #region METHODS
+        #endregion
+    }
+#ROOTNAMESPACEEND#
+#endif

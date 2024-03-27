@@ -1,0 +1,18 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using LazyJedi.Components;
+
+#ROOTNAMESPACEBEGIN#
+    public class #SCRIPTNAME# : UIControllerBase
+    {
+        #region FIELDS
+        #endregion
+
+        #region UNITY METHODS
+        #endregion
+
+        #region METHODS
+        #endregion
+    }
+#ROOTNAMESPACEEND#

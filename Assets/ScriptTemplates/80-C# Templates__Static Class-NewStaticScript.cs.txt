@@ -1,0 +1,14 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+#ROOTNAMESPACEBEGIN#
+    public static class #SCRIPTNAME#
+    {
+        #region FIELDS
+        #endregion
+
+        #region METHODS
+        #endregion
+    }
+#ROOTNAMESPACEEND#

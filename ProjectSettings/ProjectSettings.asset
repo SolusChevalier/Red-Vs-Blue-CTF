@@ -902,8 +902,8 @@ PlayerSettings:
   apiCompatibilityLevelPerPlatform: {}
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: Red Vs Blue CTF
-  metroPackageVersion: 
+  metroPackageName: RedVsBlueCTF
+  metroPackageVersion: 1.0.0.0
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
@@ -911,7 +911,7 @@ PlayerSettings:
   metroCertificateNotAfter: 0000000000000000
   metroApplicationDescription: Red Vs Blue CTF
   wsaImages: {}
-  metroTileShortName: 
+  metroTileShortName: Red Vs Blue CTF
   metroTileShowName: 0
   metroMediumTileShowName: 0
   metroLargeTileShowName: 0
@@ -976,7 +976,7 @@ PlayerSettings:
   hmiLogStartupTiming: 0
   hmiCpuConfiguration: 
   apiCompatibilityLevel: 6
-  activeInputHandler: 0
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: e2433501-9b06-44c3-8988-cbb00722421b
   framebufferDepthMemorylessMode: 0
