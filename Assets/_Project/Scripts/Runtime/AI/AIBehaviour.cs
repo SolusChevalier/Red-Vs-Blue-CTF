@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using static UnityEngine.GraphicsBuffer;
 
 namespace CTF
 {
@@ -9,40 +10,25 @@ namespace CTF
     {
         #region FIELDS
 
-        [Header("Configuration Parameters")]
-        public Transform playerTransform;
-
-        public Transform ownFlagTransform;
-        public Transform redFlagSpawnTransform;
-        public Transform aiBaseTransform;
-        public Transform aiFlagSlot;
-        public Transform eyeTransform;
-
-        [SerializeField] private float checkRate = 2.0f;
-        [SerializeField] private float captureDistance = 1.0f;
-        [SerializeField] private float engageDistance = 10f;
-
-        [Header("Shooting Parameters")]
-        [SerializeField] private GameObject projectilePrefab;
-
-        [SerializeField] private Transform shootingPoint;
-        [SerializeField] private float shootingDistance = 10f;
-        [SerializeField] private float shootingCooldown = 2f;
-
-        [Header("Strategy Parameters")]
-        [SerializeField] private float evadeCooldown = 10f;
-
         private NavMeshAgent agent;
         private NodeAbs behaviorTree;
-        private float nextCheckTime = 0f;
-        private float nextShotTime = 0f;
-        private float nextEvadeTime = 0f;
         private bool isHostile = false;
 
-        private GameObject detectedProjectile;
+        public Transform AISpawn;
+        public Transform AIFlagTrans;
+        public Transform AIFlagSpawn;
+        public Transform AIFlagZone;
+        public Transform PlayerTrans;
 
-        public Transform warpPointOne;
-        public Transform warpPointTwo;
+        public float EvalDelay = 2.0f;
+        private float EvalTime = 0f;
+        public float PickupRange = 1.0f;
+
+        public GameObject BulletPrefab;
+        public Transform AIBulletSpawn;
+        public float AttackRange = 10f;
+        public float shootingCooldown = 2f;
+        public float CombatSeperation = 10f;
 
         #endregion FIELDS
 
@@ -51,359 +37,179 @@ namespace CTF
         private void Start()
         {
             agent = GetComponent<NavMeshAgent>();
-            InitializeBehaviorTree();
+            InitBehaviorTree();
         }
 
         private void Update()
         {
-            if (Time.time >= nextCheckTime)
+            if (Time.time >= EvalTime)
             {
                 behaviorTree.Eval();
-                nextCheckTime = Time.time + checkRate;
-                FacePlayer();
-            }
-        }
-
-        private void OnEnable()
-        {
-            GameSys.OnFlagReset += ResetFlag;
-        }
-
-        private void OnDisable()
-        {
-            GameSys.OnFlagReset -= ResetFlag;
-        }
-
-        private void OnTriggerEnter(Collider other)
-        {
-            if (other.gameObject.CompareTag("PlayerProjectile"))
-            {
-                Debug.Log("AI detected player projectile.");
-
-                detectedProjectile = other.gameObject; // Assign the detected projectile
-                                                       // Trigger evade behavior if within evade cooldown
-                if (CanEvade())
-                {
-                    TryWarpToSafety();
-                }
+                EvalTime = Time.time + EvalDelay;
             }
         }
 
         #endregion UNITY METHODS
 
-        #region METHODS
+        #region Initialization
 
-        private void InitializeBehaviorTree()
+        private void InitBehaviorTree()
         {
-            behaviorTree = new Selector(new List<NodeAbs>
-    {
-        CreateFlagCarrierBehavior(),
-        CreateFlagSeekerBehavior()
-    });
+            behaviorTree = new Selector(new List<NodeAbs> { CreateFlagCarrierBehavior(), CreateFlagSeekerBehavior() });
         }
+
+        #endregion Initialization
+
+        #region Behavior Tree Nodes
 
         private NodeAbs CreateFlagCarrierBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(HasFlag),
-        new Selector(new List<NodeAbs>
-        {
-            CreateBlockedPathBehavior(),
-            CreateClearPathBehavior()
-        })
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(HasFlag), new Selector(new List<NodeAbs> { CreateBlockedPathBehavior(), CreateClearPathBehavior() }) });
         }
 
         private NodeAbs CreateBlockedPathBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(() => IsPathBlocked(aiBaseTransform.position)),
-        new ActionNode(EngagePlayerOrReevaluate)
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(() => CheckPath(AISpawn.position)), new ActionNode(EngagePlayerOrReevaluate) });
         }
 
         private NodeAbs CreateClearPathBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(() => !IsPathBlocked(aiBaseTransform.position)),
-        new ActionNode(ReturnFlag)
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(() => !CheckPath(AISpawn.position)), new ActionNode(ReturnFlag) });
         }
 
         private NodeAbs CreateFlagSeekerBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(() => !HasFlag()),
-        new Selector(new List<NodeAbs>
-        {
-            CreateFlagCaptureBehavior(),
-            CreateEngagementBehavior()
-        })
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(() => !HasFlag()), new Selector(new List<NodeAbs> { CreateFlagCaptureBehavior(), CreateEngagementBehavior() }) });
         }
 
         private NodeAbs CreateFlagCaptureBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(() => !IsPathBlocked(ownFlagTransform.position)),
-        new ActionNode(TryCaptureOwnFlag)
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(() => !CheckPath(AIFlagTrans.position)), new ActionNode(DefendFlag) });
         }
 
         private NodeAbs CreateEngagementBehavior()
         {
-            return new Sequence(new List<NodeAbs>
-    {
-        new ConditionNode(() => IsPathBlocked(ownFlagTransform.position) || IsPlayerWithinEngagementDistance()),
-        new ActionNode(BecomeHostile)
-    });
+            return new Sequence(new List<NodeAbs> { new ConditionNode(() => CheckPath(AIFlagTrans.position) || CanShootPlayer()), new ActionNode(BecomeHostile) });
         }
 
-        private bool HasFlag() => aiFlagSlot.childCount > 0;
+        #endregion Behavior Tree Nodes
+
+        #region AI Actions
+
+        private bool HasFlag() => AIFlagZone.childCount > 0;
 
         private bool ReturnFlag()
         {
-            if (!HasFlag()) return false; // Ensure the AI has the flag before attempting to return it
-
-            // Move towards the AI's base
-            MoveToTarget(aiBaseTransform.position);
-
-            // Check if the AI is close enough to its base to return the flag
-            if (IsCloseTo(aiBaseTransform.position, captureDistance))
+            if (!HasFlag()) return false;
+            agent.SetDestination(AISpawn.position);
+            if (WithinRange(AISpawn.position, PickupRange))
             {
                 ResetFlag();
-                GameSys.FlagCaptured(gameObject, "AI");
-                return true; // Flag has been successfully returned
+                return true;
             }
-            return false; // Still in the process of returning the flag
+            return false;
         }
 
-        private bool TryCaptureOwnFlag()
+        private bool DefendFlag()
         {
-            // Directly move towards the flag's position
-            MoveToTarget(ownFlagTransform.position);
-
-            // Check if the AI is close enough to interact with the flag
-            if (IsCloseTo(ownFlagTransform.position, captureDistance))
+            agent.SetDestination(AIFlagTrans.position);
+            if (WithinRange(AIFlagTrans.position, PickupRange))
             {
                 GameObject flag = GameObject.FindGameObjectWithTag("RedFlag");
-                FlagInteraction(flag);
-
-                return true; // Flag interaction attempted/succeeded
+                flag.transform.SetParent(AIFlagZone);
+                return true;
             }
-            return false; // Still trying to capture flag
-        }
-
-        private void MoveToTarget(Vector3 target) => agent.SetDestination(target);
-
-        private void FlagInteraction(GameObject flag)
-        {
-            flag.transform.SetParent(aiFlagSlot);
-            flag.transform.localPosition = Vector3.zero;
-            flag.transform.localRotation = Quaternion.identity;
-        }
-
-        private bool IsCloseTo(Vector3 position, float distance) => Vector3.Distance(transform.position, position) < distance;
-
-        private void ResetFlag()
-        {
-            foreach (Transform child in aiFlagSlot)
-            {
-                child.SetParent(null); // Reset flag
-            }
-        }
-
-        private bool CanShootPlayer()
-        {
-            Debug.Log($"Checking CanShootPlayer at {Time.time}, next shot time: {nextShotTime}");
-            return Vector3.Distance(transform.position, playerTransform.position) <= shootingDistance && Time.time >= nextShotTime;
-        }
-
-        private bool ShootAtPlayer()
-        {
-            if (CanShootPlayer())
-            {
-                nextShotTime = Time.time + shootingCooldown;
-                GameObject projectile = Instantiate(projectilePrefab, shootingPoint.position, Quaternion.LookRotation(playerTransform.position - shootingPoint.position));
-                projectile.GetComponent<Rigidbody>().velocity = (playerTransform.position - shootingPoint.position).normalized * 20f;
-                return true; // Shooting succeeded
-            }
-            return false; // Shooting not possible
-        }
-
-        private bool IsPathBlocked(Vector3 targetPosition)
-        {
-            NavMeshPath path = new NavMeshPath();
-            agent.CalculatePath(targetPosition, path);
-            return path.status != NavMeshPathStatus.PathComplete;
-        }
-
-        private bool IsPlayerWithinEngagementDistance()
-        {
-            return Vector3.Distance(transform.position, playerTransform.position) <= engageDistance;
-        }
-
-        private bool BecomeHostile()
-        {
-            isHostile = true;
-
-            // Continuously check to shoot at player when hostile and within shooting range
-            if (Time.time >= nextShotTime && Vector3.Distance(transform.position, playerTransform.position) <= shootingDistance)
-            {
-                StopAndShoot();
-            }
-            else
-            {
-                MoveSideToSide();
-            }
-            MaintainDistanceFromPlayer();
-            return true; // Becoming hostile always succeeds
+            return false;
         }
 
         private bool EngagePlayerOrReevaluate()
         {
             isHostile = true;
-            if (CanEvade() && detectedProjectile != null)
-            {
-                TryWarpToSafety();
-            }
-            else if (Time.time >= nextShotTime)
-            {
-                StopAndShoot();
-            }
-            else
-            {
-                MoveSideToSide();
-            }
-            MaintainDistanceFromPlayer();
-
-            // Re-evaluate if the AI still has the flag
+            FollowPlayer();
             if (!HasFlag())
             {
-                // Flag has been taken, possibly reset or change behavior
-                isHostile = false; // Consider changing state or behavior
-                return false; // Indicate that action has finished due to flag loss
+                isHostile = false;
+                return false;
             }
-
-            // Re-check if the path has become clear to return the flag
-            if (!IsPathBlocked(aiBaseTransform.position))
+            if (!CheckPath(AISpawn.position))
             {
-                isHostile = false; // Reset hostile state
-                return ReturnFlag(); // Attempt to return the flag again
+                isHostile = false;
+                return ReturnFlag();
             }
 
-            return true; // Continue engagement
+            return true;
         }
 
-        private bool CanEvade() => Time.time >= nextEvadeTime;
-
-        private void TryWarpToSafety()
+        private bool BecomeHostile()
         {
-            float checkRadius = 0.01f;
-
-            if (!Physics.CheckSphere(warpPointOne.position, checkRadius))
-            {
-                WarpTo(warpPointOne.position);
-                // Apply cooldown after successful warp
-                nextEvadeTime = Time.time + evadeCooldown;
-            }
-            else if (!Physics.CheckSphere(warpPointTwo.position, checkRadius))
-            {
-                WarpTo(warpPointTwo.position);
-                // Apply cooldown after successful warp
-                nextEvadeTime = Time.time + evadeCooldown;
-            }
-            else
-            {
-                Debug.Log("No safe warp points available.");
-            }
+            isHostile = true;
+            if (CanShootPlayer())
+                Shoot();
+            FollowPlayer();
+            return true;
         }
 
-        private void WarpTo(Vector3 targetPosition)
+        #endregion AI Actions
+
+        #region Helper Methods
+
+        private bool WithinRange(Vector3 pos, float dis) => Vector3.Distance(transform.position, pos) < dis;
+
+        private bool CanShootPlayer() => Vector3.Distance(transform.position, PlayerTrans.position) <= AttackRange;
+
+        private void ResetFlag()
+        { foreach (Transform child in AIFlagZone) { child.SetParent(null); } }
+
+        private void AttackPlayer()
         {
-            agent.Warp(targetPosition); // For NavMeshAgent
-                                        // Or simply set the position for non-NavMesh agents:
-                                        // transform.position = targetPosition;
+            if (CanShootPlayer() && isHostile)
+            {
+                GameObject Bullet = Instantiate(BulletPrefab, AIBulletSpawn.position, Quaternion.LookRotation(PlayerTrans.position - AIBulletSpawn.position));
+                Bullet.GetComponent<Rigidbody>().velocity = (PlayerTrans.position - AIBulletSpawn.position).normalized * 20f;
+            }
         }
 
-        private void StopAndShoot()
+        private bool CheckPath(Vector3 Target)
+        {
+            NavMeshPath path = new NavMeshPath();
+            agent.CalculatePath(Target, path);
+            return path.status != NavMeshPathStatus.PathComplete;
+        }
+
+        private void Shoot()
         {
             if (CanShootPlayer())
             {
-                // Explicitly stop the agent
-                agent.isStopped = true;
-
-                // Shoot at the player
-                if (ShootAtPlayer())
-                {
-                    Debug.Log("Shooting at player.");
-                }
-
-                // Resume movement after a delay to simulate shooting action duration
-                StartCoroutine(ResumeMovementAfterDelay(0.2f));
+                Vector3 directionToPlayer = PlayerTrans.position - transform.position;
+                directionToPlayer.y = 0;
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToPlayer), Time.deltaTime * 10f);
+                StartCoroutine(Fire());
             }
         }
 
-        private IEnumerator ResumeMovementAfterDelay(float delay)
+        private IEnumerator Fire()
         {
-            yield return new WaitForSeconds(delay);
+            agent.isStopped = true;
+            AttackPlayer();
+            yield return new WaitForSeconds(0.2f);
             agent.isStopped = false;
         }
 
-        private void MoveSideToSide()
+        private void FollowPlayer()
         {
-            if (!isHostile) return; // Only move side to side if in hostile mode
-            StartCoroutine(SideToSideMovement());
-        }
-
-        private IEnumerator SideToSideMovement()
-        {
-            while (Time.time < nextShotTime)
+            float distanceToPlayer = Vector3.Distance(transform.position, PlayerTrans.position);
+            if (distanceToPlayer > CombatSeperation)
             {
-                Vector3 sideStepDirection = Random.value < 0.5f ? transform.right : -transform.right;
-                Vector3 targetPosition = transform.position + sideStepDirection * 2f;
-                agent.SetDestination(targetPosition);
-                yield return new WaitForSeconds(Random.Range(1f, 3f));
-            }
-        }
-
-        private void FacePlayer()
-        {
-            Vector3 directionToPlayer = playerTransform.position - transform.position;
-            directionToPlayer.y = 0; // Keep rotation in the horizontal plane
-            Quaternion lookRotation = Quaternion.LookRotation(directionToPlayer);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10f);
-        }
-
-        private void MaintainDistanceFromPlayer()
-        {
-            float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-            if (distanceToPlayer > engageDistance)
-            {
-                Vector3 closerPosition = Vector3.MoveTowards(transform.position, playerTransform.position, 2f);
+                Vector3 closerPosition = Vector3.MoveTowards(transform.position, PlayerTrans.position, 2f);
                 agent.SetDestination(closerPosition);
             }
-            else if (distanceToPlayer < engageDistance)
+            else if (distanceToPlayer < CombatSeperation)
             {
-                Vector3 backAwayPosition = Vector3.MoveTowards(transform.position, playerTransform.position, -2f);
+                Vector3 backAwayPosition = Vector3.MoveTowards(transform.position, PlayerTrans.position, -2f);
                 agent.SetDestination(backAwayPosition);
             }
         }
 
-        private void ResetFlag(GameObject flag)
-        {
-            if (flag.tag == "RedFlag")
-            {
-                flag.transform.SetParent(null);
-                flag.transform.position = redFlagSpawnTransform.position;
-            }
-        }
-
-        #endregion METHODS
+        #endregion Helper Methods
     }
 }

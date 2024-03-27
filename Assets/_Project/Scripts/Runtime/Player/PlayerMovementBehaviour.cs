@@ -22,7 +22,6 @@ namespace CTF
         {
             inputActions = new PlayerMovement();
             inputActions.Movement.MovementInput.performed += ctx => Move(ctx.ReadValue<Vector2>());
-            //inputActions.Movement.MovementInput.canceled += ctx => Move(Vector2.zero);
         }
 
         public void OnEnable()

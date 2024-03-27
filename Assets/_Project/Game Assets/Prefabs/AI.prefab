@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 5963558187818449353}
   - component: {fileID: 8062546142967899511}
   - component: {fileID: 3516806863814366932}
+  - component: {fileID: 1263012340850991620}
   - component: {fileID: 4975112616775603419}
   - component: {fileID: 6480286623821256389}
   - component: {fileID: 5039432916336929064}
@@ -118,6 +119,33 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1263012340850991620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6979235226920711826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 248c24d1528e69b4dba226a6ec8ddf1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerTransform: {fileID: 0}
+  ownFlagTransform: {fileID: 0}
+  redFlagSpawnTransform: {fileID: 0}
+  aiBaseTransform: {fileID: 0}
+  aiFlagSlot: {fileID: 0}
+  eyeTransform: {fileID: 0}
+  checkRate: 2
+  captureDistance: 1
+  engageDistance: 10
+  projectilePrefab: {fileID: 0}
+  shootingPoint: {fileID: 0}
+  shootingDistance: 10
+  shootingCooldown: 2
+  warpPointOne: {fileID: 0}
+  warpPointTwo: {fileID: 0}
 --- !u!136 &4975112616775603419
 CapsuleCollider:
   m_ObjectHideFlags: 0
